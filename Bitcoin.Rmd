@@ -1,0 +1,50 @@
+---
+title: "Bitcoin"
+output: html_document
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+## Prophet
+
+We use the closed price itself to draw a fitted curve and try to predict future prices
+The packaged we used in this prediction is **Prophet** developed by Facebook Algorithm. For more details on using Prophet see <https://facebook.github.io/prophet/>.
+
+
+```{r cars}
+library(prophet)
+library(dplyr)
+
+df <- read.csv("/Users/air/Desktop/BItcoinPredict/BTC-USD.csv")
+df <- df[!df$Open == "null", ] 
+df <- mutate(df, Close=as.numeric(Close))
+
+names(df)[1] <- 'ds'
+names(df)[5] <- 'y'
+
+df <- df[,c(1,5)]
+
+df$ds = as.Date(df$ds)
+
+mean = mean(df$y)
+std = sqrt(var(df$y))
+df$y = (df$y - mean)/std
+df$ds = as.Date(df$ds)
+
+m <- prophet(df)
+
+future <- make_future_dataframe(m, periods = 100, freq = 'day')
+forecast <- predict(m, future)
+
+# tail(forecast[c('ds', 'yhat', 'yhat_lower', 'yhat_upper')])
+```
+```{r}
+prediction <- tail((forecast$yhat),100)*std + mean
+# prediction
+plot(m, forecast)
+prophet_plot_components(m, forecast)
+dyplot.prophet(m, forecast,main="Bitcoin Closing Price Perdiction")
+```
+
